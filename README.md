@@ -216,7 +216,7 @@ Publishes each projected payload (JSON `Buffer`) via GP's `amqp-cacoon`. Provide
 | `connectionUrls` | Cluster node URLs (round-robin, highest precedence). |
 | `protocol` / `username` / `password` / `host` / `port` / `vhost` | Discrete connection fields. |
 | `exchange` | Target exchange (default `""`). |
-| `routingKey` | _Required._ |
+| `routingKey` | _Required._ Static, or a template — see below. |
 | `publishOptions` | Passed through to `publish()`. |
 | `amqpOpts` | Overrides merged over the default connection options (see below). |
 | `tls` | TLS socket options (see below). |
@@ -227,6 +227,16 @@ Publishes each projected payload (JSON `Buffer`) via GP's `amqp-cacoon`. Provide
 { "type": "amqp", "url": "amqp://localhost", "routingKey": "api.request",
   "amqpOpts": { "heartbeatIntervalInSeconds": 10, "reconnectTimeInSeconds": 2 } }
 ```
+
+#### Dynamic routing keys
+
+`routingKey` may be a template with `{...}` placeholders resolved per request from the record. `{path}`, `{method}`, and `{status}` are aliases; any other `{dot.path}` (e.g. `{request.ip}`) resolves against the record too. Each substituted value is sanitized to a single routing-key token — leading/trailing slashes stripped, other unsafe characters collapsed to `_`:
+
+```json
+{ "type": "amqp", "exchange": "analytics", "routingKey": "analytics.{path}" }
+```
+
+A request to `/qodi/decode` publishes with routing key `analytics.qodi_decode`. Missing fields resolve to an empty string. A `routingKey` with no `{` is used verbatim (static). You control the literal `.` topic levels in the template; `{path}` itself is always one token.
 
 TLS-derived `connectionOptions` (from the `tls` block) merge on top of any `amqpOpts.connectionOptions`, so TLS fields win.
 

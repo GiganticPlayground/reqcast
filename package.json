@@ -1,6 +1,6 @@
 {
   "name": "reqcast",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Config-driven Express request/response analytics middleware with pluggable sinks (log, file, AMQP).",
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/GiganticPlayground/reqcast.git" },

@@ -20,7 +20,7 @@ export class AnalyticsManager {
     for (const { sink, resolveFields } of this.targets) {
       try {
         const payload = applyFormat(record, resolveFields(record.response.statusCode));
-        const result = sink.write(payload);
+        const result = sink.write(payload, record);
         if (result && typeof result.then === 'function') {
           result.catch((err) => this.onError(err, sink.name));
         }

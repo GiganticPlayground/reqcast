@@ -1,6 +1,40 @@
 import { readFileSync } from 'node:fs';
 
-import { AnalyticsSink, LoggerLike } from '../types.js';
+import { resolvePath } from '../project.js';
+import { AnalyticsRecord, AnalyticsSink, LoggerLike } from '../types.js';
+
+const ROUTING_PLACEHOLDER = /\{([^}]+)\}/g;
+const ROUTING_ALIASES: Record<string, string> = {
+  path: 'request.path',
+  method: 'request.method',
+  status: 'response.statusCode',
+};
+
+/** Makes a value safe for one routing-key token: trims slashes, replaces any
+ *  run of non-[A-Za-z0-9_-] characters with a single underscore. */
+function sanitizeToken(value: unknown): string {
+  return String(value)
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/[^A-Za-z0-9_-]+/g, '_');
+}
+
+/**
+ * Compiles a routing-key template into a per-record resolver. `{path}`,
+ * `{method}`, `{status}` (or any `{dot.path}`) are resolved against the record
+ * and sanitized; e.g. "analytics.{path}" + path "/qodi/decode" -> "analytics.qodi_decode".
+ * A template with no placeholder is returned as-is (static).
+ */
+export function compileRoutingKey(
+  template: string,
+): (record?: AnalyticsRecord) => string {
+  if (!template.includes('{')) return () => template;
+  return (record) =>
+    template.replace(ROUTING_PLACEHOLDER, (_match, expr: string) => {
+      const path = ROUTING_ALIASES[expr] ?? expr;
+      const value = record ? resolvePath(record, path) : undefined;
+      return value === undefined || value === null ? '' : sanitizeToken(value);
+    });
+}
 
 export interface AmqpTlsOptions {
   caPath?: string;
@@ -54,14 +88,14 @@ interface AmqpCacoonLike {
 export class AmqpSink implements AnalyticsSink {
   readonly name = 'amqp';
   private readonly exchange: string;
-  private readonly routingKey: string;
+  private readonly resolveRoutingKey: (record?: AnalyticsRecord) => string;
   private readonly publishOptions?: Record<string, unknown>;
   private cacoon?: AmqpCacoonLike;
   private ready?: Promise<AmqpCacoonLike>;
 
   constructor(private readonly options: AmqpSinkOptions) {
     this.exchange = options.exchange ?? '';
-    this.routingKey = options.routingKey;
+    this.resolveRoutingKey = compileRoutingKey(options.routingKey);
     this.publishOptions = options.publishOptions;
   }
 
@@ -112,11 +146,11 @@ export class AmqpSink implements AnalyticsSink {
     return this.ready;
   }
 
-  async write(payload: unknown): Promise<void> {
+  async write(payload: unknown, record?: AnalyticsRecord): Promise<void> {
     const cacoon = this.cacoon ?? (await this.init());
     await cacoon.publish(
       this.exchange,
-      this.routingKey,
+      this.resolveRoutingKey(record),
       Buffer.from(JSON.stringify(payload)),
       this.publishOptions,
     );

@@ -1,7 +1,8 @@
 import { FormatConfig, FormatFields } from './config-schema.js';
 import { makeStatusMatch } from './status.js';
 
-function resolvePath(record: unknown, path: string): unknown {
+/** Resolves a dot-path against a value; "." returns the whole value. */
+export function resolvePath(record: unknown, path: string): unknown {
   if (path === '.') return record;
   return path.split('.').reduce<unknown>((acc, key) => {
     if (acc === null || typeof acc !== 'object') return undefined;

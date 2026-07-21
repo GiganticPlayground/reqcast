@@ -32,10 +32,14 @@ export interface AnalyticsRecord {
   meta?: Record<string, unknown>;
 }
 
-/** Sinks receive the PROJECTED payload (arbitrary shape), not the raw record. */
+/**
+ * Sinks receive the PROJECTED payload (arbitrary shape). The full (redacted)
+ * record is also passed for sinks that need fields the projection may have
+ * dropped — e.g. the AMQP sink deriving a routing key from the request path.
+ */
 export interface AnalyticsSink {
   readonly name: string;
-  write(payload: unknown): void | Promise<void>;
+  write(payload: unknown, record?: AnalyticsRecord): void | Promise<void>;
   close?(): Promise<void>;
 }
 

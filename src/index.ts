@@ -10,7 +10,7 @@ export type { StatusPattern } from './status.js';
 export { makeFilter } from './filters.js';
 export { LogSink } from './sinks/log-sink.js';
 export { FileSink } from './sinks/file-sink.js';
-export { AmqpSink } from './sinks/amqp-sink.js';
+export { AmqpSink, compileRoutingKey } from './sinks/amqp-sink.js';
 export type { LogSinkOptions } from './sinks/log-sink.js';
 export type { FileSinkOptions } from './sinks/file-sink.js';
 export type { AmqpSinkOptions, AmqpTlsOptions } from './sinks/amqp-sink.js';
