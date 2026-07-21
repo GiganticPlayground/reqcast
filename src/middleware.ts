@@ -50,14 +50,17 @@ export function createAnalytics(
       try {
         const captured = getResBody?.();
         const resContentType = res.getHeader('content-type');
+        const finishedAt = Date.now();
         let record: AnalyticsRecord = {
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(finishedAt).toISOString(),
+          timestampMs: finishedAt,
           requestId: req.header('x-request-id') ?? undefined,
-          durationMs: Date.now() - startedAt,
+          durationMs: finishedAt - startedAt,
           request: {
             method: req.method,
             url: req.originalUrl,
             path: req.path,
+            pathSegments: req.path.split('/').filter(Boolean),
             query: capture.requestQuery ? req.query : undefined,
             headers: capture.requestHeaders ? req.headers : undefined,
             body: capture.requestBody ? (req.body as unknown) : undefined,

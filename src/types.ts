@@ -9,12 +9,16 @@ export interface LoggerLike {
 /** Normalized record built for each captured request, before projection. */
 export interface AnalyticsRecord {
   timestamp: string;
+  /** Same instant as `timestamp`, as milliseconds since epoch — for consumers that want a number. */
+  timestampMs: number;
   requestId?: string;
   durationMs: number;
   request: {
     method: string;
     url: string;
     path: string;
+    /** `path` split on '/' (empty segments dropped): "/qodi/decrypt" -> ["qodi", "decrypt"]. */
+    pathSegments: string[];
     query?: Record<string, unknown>;
     headers?: Record<string, unknown>;
     body?: unknown;

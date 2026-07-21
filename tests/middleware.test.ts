@@ -17,6 +17,8 @@ test('captures, redacts, projects, and dispatches the projected payload', async 
         method: 'request.method',
         status: 'response.statusCode',
         auth: 'request.headers.authorization',
+        ms: 'timestampMs',
+        params: 'request.pathSegments',
       },
     },
     sinks: [{ type: 'log' }],
@@ -47,7 +49,14 @@ test('captures, redacts, projects, and dispatches the projected payload', async 
   await analytics.close();
 
   assert.equal(received.length, 1);
-  assert.deepEqual(received[0], { method: 'POST', status: 200, auth: '[REDACTED]' });
+  const payload = received[0] as Record<string, unknown>;
+  assert.equal(payload.method, 'POST');
+  assert.equal(payload.status, 200);
+  assert.equal(payload.auth, '[REDACTED]');
+  // Epoch-ms timestamp and path segments, for consumers that need numeric time / a params array.
+  assert.equal(typeof payload.ms, 'number');
+  assert.ok((payload.ms as number) > Date.now() - 60_000);
+  assert.deepEqual(payload.params, ['echo']);
 });
 
 test('disabled config yields a passthrough handle', () => {

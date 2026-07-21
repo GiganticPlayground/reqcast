@@ -180,10 +180,13 @@ Missing paths resolve to `undefined`. A per-sink `format` **overrides** the top-
 The `AnalyticsRecord` available to projection has this shape:
 
 ```
-timestamp, requestId, durationMs,
-request:  { method, url, path, query, headers, body, ip, bodyBytes, bodyTruncated },
+timestamp, timestampMs, requestId, durationMs,
+request:  { method, url, path, pathSegments, query, headers, body, ip, bodyBytes, bodyTruncated },
 response: { statusCode, headers, body, bodyBytes, bodyTruncated }
 ```
+
+`timestamp` is ISO-8601; `timestampMs` is the same instant as milliseconds since epoch.
+`pathSegments` is `path` split on `/` with empty segments dropped (`"/qodi/decrypt"` → `["qodi", "decrypt"]`).
 
 ## Sinks
 
