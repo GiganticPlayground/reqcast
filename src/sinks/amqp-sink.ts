@@ -85,6 +85,27 @@ interface AmqpCacoonLike {
   close(): Promise<void>;
 }
 
+/**
+ * Resolves the AmqpCacoon constructor from a dynamically imported `amqp-cacoon` module.
+ *
+ * amqp-cacoon is CommonJS. Depending on how the consumer is compiled (CJS vs native ESM) and
+ * Node's interop, the constructor arrives as the module itself, as `default`, OR — when a native
+ * ESM consumer imports a CJS module whose own export is already `{ default }` — double-wrapped as
+ * `default.default`. Resolve to whichever level is actually callable rather than assuming
+ * `default` is the constructor (which breaks under ESM interop and made every publish fail).
+ */
+export function resolveAmqpCacoonCtor(mod: unknown): new (opts: unknown) => AmqpCacoonLike {
+  const unwrap = (m: unknown): unknown =>
+    typeof m === 'function' ? m : (m as { default?: unknown } | undefined)?.default;
+  const ctor = [mod, unwrap(mod), unwrap(unwrap(mod))].find(
+    (candidate) => typeof candidate === 'function',
+  );
+  if (typeof ctor !== 'function') {
+    throw new Error('amqp-cacoon: could not resolve the AmqpCacoon constructor from the imported module');
+  }
+  return ctor as new (opts: unknown) => AmqpCacoonLike;
+}
+
 export class AmqpSink implements AnalyticsSink {
   readonly name = 'amqp';
   private readonly exchange: string;
@@ -101,12 +122,7 @@ export class AmqpSink implements AnalyticsSink {
 
   private init(): Promise<AmqpCacoonLike> {
     this.ready ??= (async () => {
-      const mod = (await import('amqp-cacoon')) as unknown as {
-        default?: new (opts: unknown) => AmqpCacoonLike;
-      };
-      const AmqpCacoon = (mod.default ?? (mod as unknown)) as new (
-        opts: unknown,
-      ) => AmqpCacoonLike;
+      const AmqpCacoon = resolveAmqpCacoonCtor(await import('amqp-cacoon'));
       const connectionOptions = buildConnectionOptions(this.options.tls);
       const amqp_opts: Record<string, unknown> = {
         heartbeatIntervalInSeconds: 5,

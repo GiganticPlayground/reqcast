@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-import { AmqpSink } from '../src/sinks/amqp-sink.js';
+import { AmqpSink, resolveAmqpCacoonCtor } from '../src/sinks/amqp-sink.js';
 import { FileSink } from '../src/sinks/file-sink.js';
 import { LogSink } from '../src/sinks/log-sink.js';
 
@@ -40,4 +40,19 @@ test('AmqpSink constructs without throwing (no broker connection)', () => {
   assert.doesNotThrow(() => {
     new AmqpSink({ url: 'amqp://guest:guest@localhost:5672', routingKey: 'test.key' });
   });
+});
+
+// amqp-cacoon (CJS) surfaces differently depending on the consumer's module system. The
+// double-wrapped shape is what a native-ESM consumer (e.g. qodi) actually sees — resolving it
+// wrong made every AMQP publish fail, so each interop shape is pinned here.
+test('resolveAmqpCacoonCtor handles every amqp-cacoon interop shape', () => {
+  class Fake {}
+  // CJS require / function at the top level
+  assert.equal(resolveAmqpCacoonCtor(Fake), Fake);
+  // Standard interop: { default: ctor }
+  assert.equal(resolveAmqpCacoonCtor({ default: Fake }), Fake);
+  // Native-ESM import of a CJS module whose export is itself { default: ctor }
+  assert.equal(resolveAmqpCacoonCtor({ default: { default: Fake } }), Fake);
+  // No constructor anywhere -> loud failure, not a broken sink
+  assert.throws(() => resolveAmqpCacoonCtor({ default: { notIt: 1 } }), /could not resolve/);
 });
