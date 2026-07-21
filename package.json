@@ -1,0 +1,45 @@
+{
+  "name": "reqcast",
+  "version": "1.0.0",
+  "description": "Config-driven Express request/response analytics middleware with pluggable sinks (log, file, AMQP).",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "https://github.com/GiganticPlayground/reqcast.git" },
+  "homepage": "https://github.com/GiganticPlayground/reqcast",
+  "bugs": { "url": "https://github.com/GiganticPlayground/reqcast/issues" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "prepare": "npm run build",
+    "test": "node --import tsx --test tests/**/*.test.ts",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["express", "analytics", "middleware", "amqp", "logging", "request", "config"],
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "amqp-cacoon": "github:GiganticPlayground/amqp-cacoon#semver:^3.6.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^24.9.2",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-n": "^17.23.1",
+    "express": "^5.1.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}
