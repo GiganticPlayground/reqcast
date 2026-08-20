@@ -4,7 +4,7 @@ Config-driven Express request/response analytics middleware with pluggable sinks
 
 `reqcast` captures each request/response as a normalized `AnalyticsRecord`, redacts sensitive fields, reshapes it per-sink via a declarative dot-path projection, and fans the result out to one or more sinks — fire-and-forget and error-isolated, so analytics never break the request path.
 
-Everything about _what_ is captured, _how_ it is shaped, and _where_ it is sent lives in a single declarative **`reqcast.config.json`** per project, validated at startup by a Zod schema (fail-fast).
+Everything about _what_ is captured, _how_ it is shaped, and _where_ it is sent lives in a single declarative config per project — **`reqcast.config.json`** or **`reqcast.config.yaml`** — validated at startup by a Zod schema (fail-fast).
 
 ## Install
 
@@ -47,7 +47,25 @@ process.on('SIGTERM', async () => {
 });
 ```
 
-`loadConfig(path?)` resolves its config file from the `path` argument → the `REQCAST_CONFIG` env var → `./reqcast.config.json`, and throws a descriptive error if the file is invalid.
+`loadConfig(path?)` resolves its config file from the `path` argument → the `REQCAST_CONFIG` env var → the first existing default (`./reqcast.config.json`, then `./reqcast.config.yaml`, then `./reqcast.config.yml`), and throws a descriptive error if the file is invalid.
+
+**YAML or JSON**, chosen by file extension (`.yaml`/`.yml` → YAML, anything else → JSON), so analytics config can match the format the rest of a deployment uses. Everything after the parse — `${VAR}` interpolation, schema validation, error messages — is identical for both.
+
+```yaml
+# reqcast.config.yaml
+enabled: true
+sampleRate: 1
+filters:
+  includePaths: ['/auth/**']
+  excludePaths: ['/health']
+sinks:
+  - type: amqp
+    url: ${ANALYTICS_AMQP_URL}
+    exchange: analytics
+    routingKey: api.{path}
+```
+
+JSON keeps `JSON.parse`, so an existing deployment's parse errors are unchanged, and a malformed JSON file is never reported as a YAML problem. When both defaults exist, JSON wins — an existing project sees no change in behavior.
 
 ### Environment variables in config
 
@@ -65,7 +83,7 @@ Any string value may reference an environment variable, resolved at load time so
 - `${VAR:-default}` — uses `default` when `VAR` is unset.
 - A `${VAR}` with no default and an **unset** variable fails fast at `loadConfig` — a missing secret never silently becomes an empty string.
 
-## Configuration (`reqcast.config.json`)
+## Configuration (`reqcast.config.json` / `.yaml`)
 
 ```json
 {

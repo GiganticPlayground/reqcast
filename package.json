@@ -1,6 +1,6 @@
 {
   "name": "reqcast",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Config-driven Express request/response analytics middleware with pluggable sinks (log, file, AMQP).",
   "license": "MIT",
   "repository": {
@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "amqp-cacoon": "github:GiganticPlayground/amqp-cacoon#semver:^3.6.0",
+    "yaml": "^2.9.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
